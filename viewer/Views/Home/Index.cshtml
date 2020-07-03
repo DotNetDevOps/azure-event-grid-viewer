@@ -26,14 +26,19 @@
 </table>
 
 <script id="event-template" type="text/x-handlebars-template">
-    <tr data-toggle="collapse" data-target="#event-{{gridEventId}}" class="accordian-toggle">
+    <tr >
         <td>
-            <button class="btn btn-primary btn-xs">
+            <button class="btn btn-primary btn-xs" data-toggle="collapse" data-target="#event-{{gridEventId}}">
                 <span class="glyphicon glyphicon-eye-open"></span>
             </button>
         </td>
         <td>{{gridEventType}}</td>
         <td>{{gridEventSubject}}</td>
+        <td>
+            <button class="btn btn-primary btn-xs" id="transfer-{{gridEventId}}">
+                <span class="glyphicon glyphicon-transfer"></span>
+            </button>
+        </td>
     </tr>
     <tr class="hiddenRow collapse" id="event-{{gridEventId}}">
         <td colspan="12">
@@ -53,6 +58,8 @@
 
     <script type="text/javascript">
 
+        const urlParams = new URLSearchParams(window.location.search);
+  
         var hubConnection;
 
         var clear = function () {
@@ -73,6 +80,18 @@
 
             $("#grid-events").show();
             $('#grid-event-details').prepend(html);
+
+            document.getElementById('transfer-' + id).addEventListener('click', function () {
+                console.log("Transfer local");
+
+                fetch("http://localhost:7071/runtime/webhooks/eventgrid?functionName="+urlParams.get(eventType), {
+                    method: "POST",
+                    headers: {
+                        "content-type":"application/json",
+                        "aeg-event-type": "Notification"
+                    }, body: JSON.stringify([JSON.parse( data)])
+                });
+            });
         }
 
         var initialize = function () {
@@ -81,9 +100,10 @@
             clearEvents.addEventListener('click', function () {
                 clear();
             });
+            
 
             hubConnection = new signalR.HubConnectionBuilder()
-                .withUrl("hubs/gridevents")
+                .withUrl("https://ka-eg-reciever-demo.azurewebsites.net/hubs/gridevents")
                 .configureLogging(signalR.LogLevel.Information)
                 .build();
 
